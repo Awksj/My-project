@@ -5,7 +5,7 @@ import pandas as pd
 from openai import OpenAI
 import io
 
-client = OpenAI(api_key="ضع مفتاحك هنا")
+client = OpenAI(api_key="sk-proj-el6bbjbbupv-9ft3wtzutbwmgeuldjj2ixdalrejqyafpolnmxwv1sbgjjjpivvik_kummgkpjt3blbkfjrgrl93vhkumaeqhcieqbctzzfpg0zf9cofnum_z4zgk9lqrmodi4bsmymu-zbpcnxnl2kkgwma")
 
 def extract_text(file):
     if file.name.endswith(".pdf"):
