@@ -2,84 +2,86 @@ import streamlit as st
 import PyPDF2
 import docx
 import pandas as pd
-from openai import OpenAI
 import io
+import openai
 
-client = OpenAI(api_key="sk-proj-el6bbjbbupv-9ft3wtzutbwmgeuldjj2ixdalrejqyafpolnmxwv1sbgjjjpivvik_kummgkpjt3blbkfjrgrl93vhkumaeqhcieqbctzzfpg0zf9cofnum_z4zgk9lqrmodi4bsmymu-zbpcnxnl2kkgwma")
+st.set_page_config(page_title="AI MCQ Generator", layout="wide")
+st.title("📚 مولد أسئلة اختيار من متعدد")
 
-def extract_text(file):
-    if file.name.endswith(".pdf"):
-        pdf_reader = PyPDF2.PdfReader(file)
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
-        return text
-    elif file.name.endswith(".docx"):
-        doc = docx.Document(file)
-        return "\n".join([para.text for para in doc.paragraphs])
-    elif file.name.endswith(".txt"):
-        return file.read().decode("utf-8")
-    else:
-        return None
+# ---- إدخال مفتاح OpenAI ----
+api_key = st.text_input("sk-proj-el6bbjbbupv-9ft3wtzutbwmgeuldjj2ixdalrejqyafpolnmxwv1sbgjjjpivvik_kummgkpjt3blbkfjrgrl93vhkumaeqhcieqbctzzfpg0zf9cofnum_z4zgk9lqrmodi4bsmymu-zbpcnxnl2kkgwma")
 
-def generate_questions(text, question_count):
-    prompt = f"""
-    أنت أداة لإنشاء أسئلة امتحانات من النص التالي:
+if not api_key:
+    st.warning("أدخل مفتاح OpenAI لتتمكن من توليد الأسئلة.")
+    st.stop()
 
-    النص:
-    {text}
+# ---- اختيار نوع الإدخال ----
+input_type = st.radio("اختر نوع الإدخال:", ["TXT (نص يدوي)", "PDF / DOCX (ملف)"])
 
-    المطلوب:
-    أنشئ {question_count} أسئلة اختيار من متعدد.
-    كل سؤال يحتوي:
-    - سؤال واحد
-    - 4 خيارات (A,B,C,D)
-    - إجابة صحيحة واحدة
-    - حدد الإجابة الصحيحة بعد كل سؤال بهذا الشكل:
-      Correct Answer: A
+text = ""
+file_ready = False
 
-    صيغة الإخراج تكون منظمة كالتالي:
+if input_type == "TXT (نص يدوي)":
+    text = st.text_area("اكتب النص هنا:", height=300)
+    if text.strip():
+        file_ready = True
+else:
+    uploaded_file = st.file_uploader("اختر ملف PDF أو DOCX", type=["pdf", "docx"])
+    if uploaded_file:
+        file_ready = True
+        # استخراج النص من الملف
+        if uploaded_file.name.lower().endswith(".pdf"):
+            pdf_reader = PyPDF2.PdfReader(uploaded_file)
+            for page in pdf_reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+        elif uploaded_file.name.lower().endswith(".docx"):
+            doc = docx.Document(uploaded_file)
+            text = "\n".join([p.text for p in doc.paragraphs])
 
-    Q1: .....
-    A) ....
-    B) ....
-    C) ....
-    D) ....
-    Correct Answer: A
-    """
+# ---- عرض النص للمعاينة ----
+if text:
+    st.subheader("📄 النص المستخرج / المدخل:")
+    st.text_area("Preview:", text, height=200)
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
+# ---- إعداد توليد الأسئلة ----
+num_q = st.number_input("عدد الأسئلة المطلوبة:", min_value=1, max_value=50, value=5)
 
-st.title("📚 AI Exam Generator")
-st.subheader("توليد أسئلة اختيار من متعدد تلقائياً")
+# ---- زر توليد الأسئلة ----
+if file_ready:
+    if st.button("🧠 توليد الأسئلة"):
+        st.spinner("جاري إنشاء الأسئلة...")
+        try:
+            openai.api_key = api_key
+            prompt = f"""
+            قم بتحويل النص التالي إلى {num_q} أسئلة اختيار من متعدد باللغة العربية.
+            - لكل سؤال 4 خيارات (أ، ب، ج، د).
+            - إجابة صحيحة واحدة فقط لكل سؤال.
+            النص:
+            {text}
+            """
+            response = openai.ChatCompletion.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                max_tokens=1500
+            )
+            mcq_text = response.choices[0].message.content
 
-file = st.file_uploader("ارفع ملف PDF / DOCX / TXT", type=["pdf", "docx", "txt"])
-question_count = st.number_input("عدد الأسئلة المطلوبة", min_value=1, max_value=50, value=5)
+            st.success("تم إنشاء الأسئلة ✅")
+            st.subheader("📝 الأسئلة الناتجة:")
+            st.code(mcq_text, language="text")
 
-if file and st.button("توليد الأسئلة ✅"):
-    with st.spinner("جاري استخراج النص وتحليل الملف..."):
-        text = extract_text(file)
+            # حفظ Excel
+            df = pd.DataFrame({"Questions": mcq_text.split("\n\n")})
+            excel_buf = io.BytesIO()
+            df.to_excel(excel_buf, index=False)
+            excel_buf.seek(0)
+            st.download_button("⬇ تحميل Excel", excel_buf, file_name="mcq_questions.xlsx")
+            st.download_button("⬇ تحميل TXT", mcq_text, file_name="mcq_questions.txt")
 
-    if text:
-        st.success("تم استخراج النص ✅")
-
-        with st.spinner("جاري إنشاء الأسئلة بالذكاء الاصطناعي..."):
-            questions = generate_questions(text, question_count)
-
-        st.write("### ✅ الأسئلة الناتجة")
-        st.text(questions)
-
-        data = {"Questions": [questions]}
-        df = pd.DataFrame(data)
-
-        st.download_button("📄 تحميل كـ TXT", questions, file_name="questions.txt")
-
-        excel_buffer = io.BytesIO()
-        df.to_excel(excel_buffer, index=False)
-        st.download_button("📊 تحميل Excel", excel_buffer, file_name="questions.xlsx")
-    else:
-        st.error("❌ نوع الملف غير مدعوم أو فشل استخراج النص")
+        except Exception as e:
+            st.error(f"حدث خطأ أثناء الاتصال بـ OpenAI: {e}")
+else:
+    st.info("اختر نوع إدخال صالح ثم أضف نص أو ملف لتفعيل الزر.")
