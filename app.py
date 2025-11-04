@@ -9,11 +9,7 @@ st.set_page_config(page_title="AI MCQ Generator", layout="wide")
 st.title("📚 مولد أسئلة اختيار من متعدد")
 
 # ---- إدخال مفتاح OpenAI ----
-api_key = st.text_input("sk-proj-el6bbjbbupv-9ft3wtzutbwmgeuldjj2ixdalrejqyafpolnmxwv1sbgjjjpivvik_kummgkpjt3blbkfjrgrl93vhkumaeqhcieqbctzzfpg0zf9cofnum_z4zgk9lqrmodi4bsmymu-zbpcnxnl2kkgwma")
-
-if not api_key:
-    st.warning("أدخل مفتاح OpenAI لتتمكن من توليد الأسئلة.")
-    st.stop()
+client = OpenAI(api_key="sk-proj-el6bbjbbupv-9ft3wtzutbwmgeuldjj2ixdalrejqyafpolnmxwv1sbgjjjpivvik_kummgkpjt3blbkfjrgrl93vhkumaeqhcieqbctzzfpg0zf9cofnum_z4zgk9lqrmodi4bsmymu-zbpcnxnl2kkgwma")
 
 # ---- اختيار نوع الإدخال ----
 input_type = st.radio("اختر نوع الإدخال:", ["TXT (نص يدوي)", "PDF / DOCX (ملف)"])
