@@ -10,9 +10,6 @@ st.title("📚 مولد أسئلة اختيار من متعدد")
 
 # ---- إدخال مفتاح OpenAI ----
 api_key = st.text_input("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")
-if not api_key:
-    st.warning("أدخل مفتاح OpenAI لتتمكن من توليد الأسئلة.")
-    st.stop()
 
 # ---- اختيار نوع الإدخال ----
 input_type = st.radio("اختر نوع الإدخال:", ["TXT (نص يدوي)", "PDF / DOCX (ملف)"])
