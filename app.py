@@ -55,7 +55,7 @@ if file_ready:
             النص:
             {text}
             """
-            response = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
