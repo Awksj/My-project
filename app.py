@@ -9,11 +9,9 @@ st.set_page_config(page_title="AI MCQ Generator", layout="wide")
 st.title("📚 مولد أسئلة اختيار من متعدد")
 
 # ---- إدخال مفتاح OpenAI ----
-openai.api_key = st.secrets["OPENAI_API_KEY"]
-
+openai.api_key = st.secrets["openai.api_key"]
 # ---- اختيار نوع الإدخال ----
 input_type = st.radio("اختر نوع الإدخال:", ["TXT (نص يدوي)", "PDF / DOCX (ملف)"])
-
 text = ""
 file_ready = False
 
